@@ -14,6 +14,7 @@ logger = logging.getLogger(__name__)
 def main(dry_run=False):
     config = util.get_config()
     tbl_cache = util.get_config_location().joinpath(webpage.TABLE_CACHE_NAME)
+    driver = None
     if tbl_cache.exists():
         logger.info(f"Loading class table from cache: {str(tbl_cache)}")
         with tbl_cache.open('r') as f:
@@ -43,9 +44,13 @@ def main(dry_run=False):
                 logger.info(
                     f"Found matching class for {event_summary} at {event_start.isoformat()}"
                 )
-                if not dry_run:
+                if driver is None:
+                    logger.debug(
+                        f"No Driver - would click: {matching_class['booking_id']}"
+                    )
+                if not dry_run and driver is not None:
                     # Make booking
-                    ...
+                    webpage.book_class(driver, matching_class)
                 else:
                     logger.debug(
                         f"Dry Run - would click: {matching_class['booking_id']}"
@@ -53,4 +58,4 @@ def main(dry_run=False):
 
 
 if __name__ == "__main__":
-    main(dry_run=True)
+    main(dry_run=False)

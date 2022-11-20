@@ -64,6 +64,7 @@ def login(
         submit.click()
     except Exception as exc:
         logger.exception("Encountered an error while logging in")
+        driver.close()
         raise exc
 
 
@@ -164,6 +165,26 @@ def parse_class_elem(
         raise exc
 
 
+def wait_for_elem(driver, attr, val, wait_time=15):
+    try:
+        condition = EC.presence_of_element_located(
+            (By.XPATH, f"//*[@{attr}='{val}']")
+        )
+        WebDriverWait(driver, wait_time).until(condition)
+    except TimeoutException as exc:
+        msg = f"Browser timed out after {wait_time}s"
+        logger.error(msg)
+        driver.close()
+        raise exc
+
+
+def get_classes_page(driver: WebDriver):
+    classes_url = APP_BASE_URL + "/classes.asp"
+    if driver.current_url != classes_url:
+        driver.get(classes_url)
+        wait_for_elem(driver, 'title', BUTTON_TITLE)
+
+
 def build_class_table(
         driver: WebDriver,
         timezone: str
@@ -183,20 +204,8 @@ def build_class_table(
     logger.info("Building class table")
     time.sleep(1)       # stuff needs to load
     class_table = []
-    driver.get(APP_BASE_URL + "/classes.asp")
-    timeout_time = 15
-    try:
-        # wait until we see any booking button on the page
-        condition = EC.presence_of_element_located(
-            (By.XPATH, f"//*[@title='{BUTTON_TITLE}']")
-        )
-        WebDriverWait(driver, 15).until(condition)
-    except TimeoutException as exc:
-        msg = f"Browser timed out after {timeout_time}s"
-        logger.error(msg)
-        raise exc
-    finally:
-        src = driver.page_source
+    get_classes_page(driver)
+    src = driver.page_source
     # source will be the classes for this week, along with all informaiton you
     # need to register
     page = BeautifulSoup(src, features="lxml")
@@ -233,6 +242,22 @@ def build_class_table(
     )
 
     return class_table
+
+
+def book_class(
+        driver: WebDriver,
+        class_dict: Dict[str, Any]
+) -> None:
+    booking_id = class_dict['booking_id']
+    get_classes_page(driver)
+    class_button = (By.XPATH, f"//*[@onclick='{booking_id}']")
+    class_book_button = driver.find_element(*class_button)
+    class_book_button.click()
+    wait_for_elem(driver, 'id', 'bookbutton')
+    button = (By.ID, "bookbutton")
+    input_tag = (By.TAG_NAME, "input")
+    popup_book_button = driver.find_element(*button).find_element(*input_tag)
+    popup_book_button.click()
 
 
 def serialize_class_table(class_table: List[dict]) -> str:
@@ -273,4 +298,6 @@ def main(save_cache=False):
 
 
 if __name__ == "__main__":
+    # Run the webpage and save a cache of the class schedule, so you can do some
+    # dev work without hitting the page a bunch
     main(save_cache=True)
