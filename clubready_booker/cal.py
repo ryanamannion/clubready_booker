@@ -14,8 +14,7 @@ from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build, Resource
 from googleapiclient.errors import HttpError
 
-from clubready_booker.secrets import get_config_location
-from clubready_booker.common import BOOKABLE_RANGE
+from clubready_booker.util import get_config_location, default_config_vals
 
 # If modifying these scopes, delete the file token.json.
 SCOPES = ['https://www.googleapis.com/auth/calendar.readonly']
@@ -24,7 +23,6 @@ logger = logging.getLogger(__name__)
 
 CREDENTIALS_FILENAME = "calendar_credentials.json"
 TOKEN_FILENAME = "token.json"
-MAX_RESULTS = os.environ.get("CLUBREADYBOOKER_MAXRESULTS", 100)
 
 
 def get_service() -> Resource:
@@ -53,7 +51,7 @@ def get_service() -> Resource:
         service = build('calendar', 'v3', credentials=creds)
     except Exception as exc:
         logger.exception(
-            "Encountered and error building the google calendar service"
+            "Encountered and error building the Google Calendar service"
         )
         raise exc
     return service
@@ -67,11 +65,11 @@ def get_event_start_datetime(event: dict) -> datetime.datetime:
 def get_next_events(
         service: Resource,
         summary_set: Optional[Set[str]] = None,
-        day_range: int = BOOKABLE_RANGE,
-        max_results: int = MAX_RESULTS
+        bookable_range: int = default_config_vals['bookable_range'],
+        max_results: int = default_config_vals['max_results']
 ) -> List[dict]:
     logger.info("Getting events from Google Calendar")
-    kawrgs = {'day_range': day_range, 'max_results': max_results}
+    kawrgs = {'bookable_range': bookable_range, 'max_results': max_results}
     logger.debug(f"Using kwargs: {kawrgs}")
     # normalize class names
     if summary_set is not None:
@@ -109,7 +107,7 @@ def get_next_events(
                 continue
             start_time = get_event_start_datetime(event)
             if start_time > max_start_time:
-                invalid_reasons.append(f"beyond day range")
+                invalid_reasons.append(f"beyond bookable range")
                 continue
             valid_events.append(event)
         if not valid_events:
