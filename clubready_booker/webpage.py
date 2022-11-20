@@ -209,14 +209,9 @@ def build_class_table(
     assert date_span[0] < date_span[1], f"Date span invalid: {date_span}"
     all_dates = [date_span[0]]
     prev_date = date_span[0]
-    for _ in range((sub(*reversed(date_span))).days):
-        try:
-            new_date = date(prev_date.year, prev_date.month, prev_date.day+1)
-        except ValueError:
-            if prev_date.month != 12:
-                new_date = date(prev_date.year, prev_date.month + 1, 1)
-            else:
-                new_date = date(prev_date.year + 1, 1, 1)
+    date_span_days_len = (sub(*reversed(date_span))).days
+    for _ in range(date_span_days_len):
+        new_date = prev_date + relativedelta(days=1)
         all_dates.append(new_date)
         prev_date = new_date
 
