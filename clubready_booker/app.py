@@ -1,5 +1,5 @@
 """Bring it all together into a functioning app"""
-from clubready_booker import cal, webpage, util
+from clubready_booker import cal, webpage
 from operator import itemgetter
 import logging
 
@@ -12,13 +12,13 @@ logger = logging.getLogger(__name__)
 
 
 def main(dry_run=False):
+    config = util.get_config()
     tbl_cache = util.get_config_location().joinpath(webpage.TABLE_CACHE_NAME)
     if tbl_cache.exists():
         logger.info(f"Loading class table from cache: {str(tbl_cache)}")
         with tbl_cache.open('r') as f:
             class_table = webpage.load_serialized_class_table(f.read())
     else:
-        config = util.get_config()
         driver = webpage.get_driver(config['url'])
         webpage.login(driver, config['username'], config['password'])
         class_table = webpage.build_class_table(driver, config['timezone'])
@@ -27,7 +27,7 @@ def main(dry_run=False):
 
     cal_service = cal.get_service()
     upcoming_events = cal.get_next_events(
-        cal_service, class_names, BOOKABLE_RANGE
+        cal_service, class_names, config['bookable_range']
     )
 
     by_class_name = ft.indexBy("class_name", class_table)

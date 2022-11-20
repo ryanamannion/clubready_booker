@@ -53,7 +53,6 @@ def get_config_location():
             raise NotADirectoryError(msg)
     for directory in CHECK_PATHS:
         if directory.exists():
-            logger.debug(f"Using config dir {directory}")
             return directory
     else:
         msg = SECRETS_NOT_FOUND.format(
