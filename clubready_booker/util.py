@@ -29,10 +29,10 @@ default_config_vals = {
     'username': None,
     'password': None,
     'url': None,
-    'bookablerange': 2,
-    'maxresults': 100,
+    'bookable_range': 2,
+    'max_results': 100,
     'timezone': 'America/New_York',
-    'configdir': None
+    'config_dir': None
 }
 
 env_vars = {
@@ -42,12 +42,12 @@ env_vars = {
 
 
 def get_config_location():
-    if not isinstance(env_vars['configdir'], NotSpecified):
-        directory = Path(env_vars['configdir'])
+    if not isinstance(env_vars['config_dir'], NotSpecified):
+        directory = Path(env_vars['config_dir'])
         if not directory.exists():
             msg = (
                 f"Got config dir from env var, but path does not exist: "
-                f"{env_vars['configdir']}"
+                f"{env_vars['config_dir']}"
             )
             logger.error(msg)
             raise NotADirectoryError(msg)
