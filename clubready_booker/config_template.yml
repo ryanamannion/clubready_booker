@@ -1,0 +1,24 @@
+# TEMPLATE CONFIG
+
+# This should be filled out and placed into a dir in the config path. That
+# path can be found in `clubready_booker.util.PATH`, or you can specify a path
+# to look in with the environment variable `CLUBREADYBOOKER_CONFIG_DIR`
+
+# The file also needs to be named the same as `clubready_booker.util.FILE_NAME`
+# i.e. you need to remove `_template` from this file name for it to be read
+
+# ClubReady secrets
+url:
+username:
+password:
+
+# Timezone for ClubReady classes schedule, str
+# import pytz; pytz.all_timezones
+timezone:
+
+# Max number of events to fetch from Google Calendar, int
+max_results:
+
+# How far out in days you are allowed to book classes for on ClubReady, int
+# e.g. bookablerange of 2 means if it is Jan 1 you can book for Jan 2 and Jan 3
+bookable_range:
