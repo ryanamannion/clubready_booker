@@ -260,14 +260,21 @@ def load_serialized_class_table(class_table: str) -> List[dict]:
 
 
 def main(save_cache=False):
-    config = get_config()
-    driver = get_driver(config['url'])
-    login(driver, config['username'], config['password'])
-    class_table = build_class_table(driver, config['timezone'])
-    if save_cache:
-        conf_dir = get_config_location()
-        with conf_dir.joinpath(TABLE_CACHE_NAME).open("w") as f:
-            f.write(serialize_class_table(class_table))
+    driver = None
+    try:
+        config = get_config()
+        driver = get_driver(config['url'])
+        login(driver, config['username'], config['password'])
+        class_table = build_class_table(driver, config['timezone'])
+        if save_cache:
+            conf_dir = get_config_location()
+            with conf_dir.joinpath(TABLE_CACHE_NAME).open("w") as f:
+                f.write(serialize_class_table(class_table))
+    except Exception:
+        logger.exception("Encountered an exception")
+    finally:
+        if driver is not None:
+            driver.close()
 
 
 if __name__ == "__main__":
