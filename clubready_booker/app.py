@@ -7,7 +7,7 @@ def main():
     driver = webpage.get_driver(user_secrets['url'])
     webpage.login(driver, user_secrets['username'], user_secrets['password'])
     class_table = webpage.build_class_table(driver)
-    class_names = {}
+    class_names = set()
 
     cal_service = cal.get_service()
     upcoming_events = cal.get_next_events(cal_service, class_names)
