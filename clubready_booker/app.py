@@ -1,5 +1,4 @@
 """Bring it all together into a functioning app"""
-
 from clubready_booker import cal, webpage, secrets
 
 
