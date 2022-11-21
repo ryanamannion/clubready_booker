@@ -146,18 +146,23 @@ def parse_class_elem(
         now = pytz.timezone(timezone).localize(datetime.now())
         ended = class_end < now if class_end else True
         started = class_start < now if class_start else True
+        if class_size is not None and registered is not None:
+            spots_available = (class_size - registered) > 0
+        else:
+            spots_available = None
         _class = {
             "texts": texts,
-            "class_start": class_start,
+            "start_time": class_start,
             "started": started,
-            "class_end": class_end,
+            "end_time": class_end,
             "ended": ended,
             "class_name": class_name,
             "duration": duration,
             "instructor": instructor,
             "registered": registered,
             "class_size": class_size,
-            "booking_id": booking_id,
+            "spots_available": spots_available,
+            "booking_id": booking_id
         }
         return _class
     except Exception as exc:
@@ -237,8 +242,9 @@ def build_class_table(
                 parse_class_elem(class_elem, column_date, class_idx, timezone)
             )
 
+    date_span_str = " - ".join((d.isoformat() for d in date_span))
     logger.info(
-        f"Found {len(class_table)} classes for date range {date_span}"
+        f"Found {len(class_table)} classes for date range {date_span_str}"
     )
 
     return class_table
@@ -246,24 +252,52 @@ def build_class_table(
 
 def book_class(
         driver: WebDriver,
-        class_dict: Dict[str, Any]
+        class_dict: Dict[str, Any],
+        dry_run: bool = False
 ) -> None:
-    booking_id = class_dict['booking_id']
-    get_classes_page(driver)
-    class_button = (By.XPATH, f"//*[@onclick='{booking_id}']")
-    class_book_button = driver.find_element(*class_button)
-    class_book_button.click()
-    wait_for_elem(driver, 'id', 'bookbutton')
-    button = (By.ID, "bookbutton")
-    input_tag = (By.TAG_NAME, "input")
-    popup_book_button = driver.find_element(*button).find_element(*input_tag)
-    popup_book_button.click()
+    logger.info(
+        f"Attempting to book {class_dict['class_name']} at "
+        f"{class_dict['start_time'].isoformat()}"
+    )
+    try:
+        booking_id = class_dict['booking_id']
+        get_classes_page(driver)
+        class_button = (By.XPATH, f"//*[@onclick='{booking_id}']")
+        class_book_button = driver.find_element(*class_button)
+        driver.execute_script("arguments[0].scrollIntoView(true);", class_book_button)
+        class_book_button.click()
+
+        # The HTML elements for booking a class and adding yourself to the wait
+        # list are pretty much exactly the same, they just have different text
+        if class_dict['spots_available'] == 0:
+            logger.info("No spots available in class, joining the wait list")
+        wait_for_elem(driver, 'id', 'bookbutton')
+        button = (By.ID, "bookbutton")
+        input_tag = (By.TAG_NAME, "input")
+        popup_book_button = driver.find_element(*button)
+        popup_book_button = popup_book_button.find_element(*input_tag)
+        if not dry_run:
+            popup_book_button.click()
+        else:
+            logger.info("Dry Run - would have booked class")
+
+        # close the popup
+        close_button = driver.find_element(By.ID, "MB_close")
+        close_button.click()
+        time.sleep(1.5)
+
+    except Exception as exc:
+        logger.exception(
+            f"Encountered an Exception while booking {class_dict['class_name']}"
+            f" at {class_dict['start_time'].isoformat()}"
+        )
+        raise exc
 
 
 def serialize_class_table(class_table: List[dict]) -> str:
     handled = []
     for row in class_table:
-        for time_key in ['class_start', 'class_end']:
+        for time_key in ['start_time', 'end_time']:
             date_time: datetime = row[time_key]
             if date_time is not None:
                 row[time_key] = date_time.isoformat()
@@ -274,8 +308,8 @@ def serialize_class_table(class_table: List[dict]) -> str:
 def load_serialized_class_table(class_table: str) -> List[dict]:
     class_table = json.loads(class_table)
     for row in class_table:
-        row['class_start'] = datetime.fromisoformat(row['class_start'])
-        row['class_end'] = datetime.fromisoformat(row['class_end'])
+        row['start_time'] = datetime.fromisoformat(row['start_time'])
+        row['end_time'] = datetime.fromisoformat(row['end_time'])
     return class_table
 
 
