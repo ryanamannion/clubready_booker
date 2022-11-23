@@ -13,7 +13,7 @@ from typing import Dict, Any, List
 from string import punctuation
 
 from selenium import webdriver
-from selenium.webdriver.firefox.service import Service as FirefoxService
+from selenium.webdriver.chrome.service import Service as ChromeService
 from selenium.webdriver.common.by import By
 from selenium.webdriver.remote.webdriver import WebDriver
 from selenium.webdriver.support.ui import WebDriverWait
@@ -37,10 +37,10 @@ os.environ['WDM_PROGRESS_BAR'] = "0"
 
 def get_driver(url: str) -> WebDriver:
     try:
-        from webdriver_manager.firefox import GeckoDriverManager
-        exc_path = GeckoDriverManager().install()
-        service = FirefoxService(exc_path)
-        driver = webdriver.Firefox(service=service)
+        from webdriver_manager.chrome import ChromeDriverManager
+        exc_path = ChromeDriverManager().install()
+        service = ChromeService(exc_path)
+        driver = webdriver.Chrome(service=service)
         driver.get(url)
     except Exception as exc:
         logger.exception("Encountered an error trying to get the page")
@@ -334,4 +334,4 @@ def main(save_cache=False):
 if __name__ == "__main__":
     # Run the webpage and save a cache of the class schedule, so you can do some
     # dev work without hitting the page a bunch
-    main(save_cache=True)
+    main(save_cache=False)
