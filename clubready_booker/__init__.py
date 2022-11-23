@@ -1,7 +1,7 @@
 import logging.handlers
 import os
 
-__version__ = "0.0.0-dev"
+__version__ = "0.0.1"
 
 LOGFILE = "clubready_booker.log"
 LOGLEVEL = os.environ.get("LOGLEVEL", logging.INFO)
