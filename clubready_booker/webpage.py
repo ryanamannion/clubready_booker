@@ -14,6 +14,7 @@ from string import punctuation
 
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service as ChromeService
+from selenium.webdriver.chrome.options import Options as ChromeOptions
 from selenium.webdriver.common.by import By
 from selenium.webdriver.remote.webdriver import WebDriver
 from selenium.webdriver.support.ui import WebDriverWait
@@ -39,8 +40,11 @@ def get_driver(url: str) -> WebDriver:
     try:
         from webdriver_manager.chrome import ChromeDriverManager
         exc_path = ChromeDriverManager().install()
+        chrome_options = ChromeOptions()
+        chrome_options.add_argument("--headless")
+        chrome_options.add_argument("--no-sandbox")
         service = ChromeService(exc_path)
-        driver = webdriver.Chrome(service=service)
+        driver = webdriver.Chrome(service=service, options=chrome_options)
         driver.get(url)
     except Exception as exc:
         logger.exception("Encountered an error trying to get the page")
