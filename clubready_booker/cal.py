@@ -5,7 +5,6 @@ Cannot name it calendar.py or ese imports break
 import datetime
 import logging
 from typing import Optional, Set, List
-import os
 from collections import Counter
 
 from google.auth.transport.requests import Request
@@ -26,6 +25,7 @@ TOKEN_FILENAME = "token.json"
 
 
 def get_service() -> Resource:
+    """Get GCal API service"""
     creds = None
     # The file token.json stores the user's access and refresh tokens, and is
     # created automatically when the authorization flow completes for the first
@@ -58,6 +58,7 @@ def get_service() -> Resource:
 
 
 def get_event_start_datetime(event: dict) -> datetime.datetime:
+    """Convert GCal event start to datetime.datetime."""
     event_start = event['start']
     return datetime.datetime.fromisoformat(event_start['dateTime'])
 
@@ -68,6 +69,22 @@ def get_next_events(
         bookable_range: int = default_config_vals['bookable_range'],
         max_results: int = default_config_vals['max_results']
 ) -> List[dict]:
+    """Get events between now and bookable_range, up to `max_results`
+
+    Args:
+        service: GCal API Resource
+        summary_set: Optional set of summaries to filter on; if provided, only
+            events with summaries (i.e. event names) in the summary set will be
+            returned. Summaries are lowered to compare
+        bookable_range: Max time in days in to fetch events up to; Some
+            ClubReady pages configure it so that you can only book classes
+            e.g. two days in advance.
+        max_results: Maximum number of results to return from calendar API call
+
+    Returns:
+        List of dicts, each dict a valid event from the calendar according to
+        the specified kwargs.
+    """
     logger.info("Getting events from Google Calendar")
     kawrgs = {'bookable_range': bookable_range, 'max_results': max_results}
     logger.debug(f"Using kwargs: {kawrgs}")
@@ -80,7 +97,7 @@ def get_next_events(
 
     try:
         now = datetime.datetime.now(datetime.timezone.utc)
-        now_str = now.isoformat()    # 'Z' indicates UTC time
+        now_str = now.isoformat()
 
         events_result = service.events().list(
             calendarId='primary', timeMin=now_str, singleEvents=True,
@@ -93,7 +110,7 @@ def get_next_events(
             return []
 
         # Prints the start and name of the next 10 events
-        max_start_time = now + datetime.timedelta(1)
+        max_start_time = now + datetime.timedelta(days=bookable_range)
         valid_events = []
         invalid_reasons = []
         for event in events:
@@ -127,7 +144,7 @@ def get_next_events(
 
 if __name__ == '__main__':
     service = get_service()
-    cal_events = get_next_events(service, {"Boxing All Levels"})
+    cal_events = get_next_events(service, bookable_range=2)
     for cal_event in cal_events:
         start = cal_event['start'].get('dateTime', cal_event['start'].get('date'))
         print(f"{cal_event['summary']} @ {start}")

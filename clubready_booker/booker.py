@@ -11,7 +11,16 @@ from clubready_booker import util
 logger = logging.getLogger(__name__)
 
 
-def main(dry_run=False):
+def book_classes(dry_run=False) -> None:
+    """Book classes by comparing ClubReady schedule and GCal events.
+
+    Args:
+        dry_run: Whether to actually book the class; all steps are run except
+        the click to book the class.
+
+    Returns:
+        None
+    """
     config = util.get_config()
     tbl_cache = util.get_config_location().joinpath(webpage.TABLE_CACHE_NAME)
     driver = None
@@ -55,4 +64,9 @@ def main(dry_run=False):
 
 
 if __name__ == "__main__":
-    main(dry_run=True)
+    import sys
+    if len(sys.argv) > 1:
+        dry_run = bool(sys.argv[1])
+    else:
+        dry_run = "Dry run? 1/0 > "
+    book_classes(dry_run=dry_run)

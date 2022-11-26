@@ -9,7 +9,7 @@ import re
 from copy import deepcopy
 import logging
 from operator import sub, attrgetter
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 from string import punctuation
 
 from selenium import webdriver
@@ -36,7 +36,20 @@ TABLE_CACHE_NAME = "class_table_cache.json"
 os.environ['WDM_PROGRESS_BAR'] = "0"
 
 
-def get_driver(url: str) -> WebDriver:
+def get_driver(url: Optional[str] = None) -> WebDriver:
+    """Get the Chrome selenium driver and fetch `url`
+
+    webdriver_manager handles getting the latest chrome driver and installing
+    it if it is not already. Executable should already be downloaded and in
+    PATH
+
+    Args:
+        url: optional url to get after selenium driver is set up
+
+    Returns:
+        WebDriver instance for Google Chrome that should be navigated to url, if
+        one was provided.
+    """
     try:
         from webdriver_manager.chrome import ChromeDriverManager
         exc_path = ChromeDriverManager().install()
@@ -52,7 +65,8 @@ def get_driver(url: str) -> WebDriver:
         chrome_options.add_argument("disable-infobars")
         service = ChromeService(exc_path)
         driver = webdriver.Chrome(service=service, options=chrome_options)
-        driver.get(url)
+        if url is not None:
+            driver.get(url)
     except Exception as exc:
         logger.exception("Encountered an error trying to get the page")
         raise exc
@@ -64,7 +78,13 @@ def login(
         username: str,
         password: str
 ) -> None:
-    """Log in to ClubReady account"""
+    """Log in to ClubReady account.
+
+    Args:
+        driver: WebDriver instance to use
+        username: account username
+        password: account password
+    """
     logger.info("Logging in")
     try:
         uid_form = driver.find_element(by=By.ID, value="uid")
@@ -85,6 +105,19 @@ def parse_class_elem(
         class_idx: int,
         timezone: str
 ) -> Dict[str, Any]:
+    """Given the
+
+    Args:
+        class_elem: Tag instance that contains information about a single class
+            from the class table
+        column_date: date for this column in the class table
+        class_idx: index for this class in the column
+        timezone: timezone information to use for adding time to the datetime
+            for this class, should be in pytz.all_timezones
+
+    Returns:
+        Dict of parsed information for this class
+    """
     try:
         texts = [
             s.strip() for s in class_elem.strings if WS.match(s) is None
@@ -181,7 +214,23 @@ def parse_class_elem(
         raise exc
 
 
-def wait_for_elem(driver, attr, val, wait_time=15):
+def wait_for_elem(
+        driver: WebDriver,
+        attr: str,
+        val: str,
+        wait_time: int = 15
+) -> None:
+    """Wait for an element with a certain attr:val pair to appear on the page
+
+    Args:
+        driver: WebDriver, navigated to the page to wait on
+        attr: attribute of html tag to wait for
+        val: value of attribute to wait for
+        wait_time: max wait time in seconds, otherwise raise TimeoutException
+
+    Raises:
+        TimeoutException: if element is not found within [0,wait_time] seconds
+    """
     try:
         condition = EC.presence_of_element_located(
             (By.XPATH, f"//*[@{attr}='{val}']")
@@ -195,6 +244,7 @@ def wait_for_elem(driver, attr, val, wait_time=15):
 
 
 def get_classes_page(driver: WebDriver):
+    """Get the page containing the class table from the clubready site."""
     classes_url = APP_BASE_URL + "/classes.asp"
     if driver.current_url != classes_url:
         driver.get(classes_url)
@@ -266,6 +316,17 @@ def book_class(
         class_dict: Dict[str, Any],
         dry_run: bool = False
 ) -> None:
+    """Given the driver and a selected class, book the user into the class.
+
+    Args:
+        driver: logged-in Webdriver instance to use to book class
+        class_dict: class info dict from parse_class_elem() for selected class
+        dry_run: whether to actually book user into the class, otherwise print
+            info to log that class would have booked
+
+    Returns:
+
+    """
     logger.info(
         f"Attempting to book {class_dict['class_name']} at "
         f"{class_dict['start_time'].isoformat()}"
@@ -306,6 +367,16 @@ def book_class(
 
 
 def serialize_class_table(class_table: List[dict]) -> str:
+    """Handle un-serializable elements from the class table.
+
+    Use to write class table to JSON
+
+    Args:
+        class_table: list of parsed class info dicts from build_class_table()
+
+    Returns:
+        string of JSON serialized data
+    """
     handled = []
     for row in class_table:
         for time_key in ['start_time', 'end_time']:
@@ -317,6 +388,7 @@ def serialize_class_table(class_table: List[dict]) -> str:
 
 
 def load_serialized_class_table(class_table: str) -> List[dict]:
+    """Load a serialized class table from string."""
     class_table = json.loads(class_table)
     for row in class_table:
         row['start_time'] = datetime.fromisoformat(row['start_time'])
@@ -325,6 +397,11 @@ def load_serialized_class_table(class_table: str) -> List[dict]:
 
 
 def main(save_cache=False):
+    """Log in and get the class table.
+
+    Args:
+        save_cache: if True, save JSON of class table to CWD as TABLE_CACHE_NAME
+    """
     driver = None
     try:
         config = get_config()
@@ -345,4 +422,9 @@ def main(save_cache=False):
 if __name__ == "__main__":
     # Run the webpage and save a cache of the class schedule, so you can do some
     # dev work without hitting the page a bunch
-    main(save_cache=False)
+    import sys
+    if len(sys.argv) > 1:
+        save_cache = bool(sys.argv[1])
+    else:
+        save_cache = input("Save class table cache to JSON? 1/0 > ")
+    main(save_cache=save_cache)
