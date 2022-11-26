@@ -10,7 +10,7 @@
 
 # When you run this script, you will probably want it to run from the top level
 # clubready_booker dir, so CD there and make sure the virtual env is set up
-# cd path/to/toplevel/dir
-# source full/path/to/venv/bin/activate
+# cd path_to/clubready_booker
+# source path_to/clubready_booker/venv/bin/activate
 python clubready_booker/booker.py
 # deactivate
