@@ -31,6 +31,7 @@ APP_BASE_URL = "https://app.clubready.com/clients"
 WS = re.compile(r"^\s+$")
 DURATION = re.compile(r"(\d+)\s+(hour(s)?|min(s)?)", re.IGNORECASE)
 BUTTON_TITLE = 'Book A Place In This Class'
+BOOKED_TITLE = "You Are Booked Into This Class - Click To Change Your Booking"
 TABLE_CACHE_NAME = "class_table_cache.json"
 
 os.environ['WDM_PROGRESS_BAR'] = "0"
@@ -188,7 +189,10 @@ def parse_class_elem(
                 break
         if button := class_elem.find(attrs={'title': BUTTON_TITLE}):
             booking_id = button.attrs.get('onclick', None)
-        if booking_id:
+        elif button := class_elem.find(attrs={'title': BOOKED_TITLE}):
+            booking_id = button.attrs.get('onclick', None)
+            booked = True
+        if booking_id and booked is None:
             if "selectclass" in booking_id:
                 booked = False
             elif "showbooking" in booking_id:
