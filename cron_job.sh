@@ -12,5 +12,5 @@
 # clubready_booker dir, so CD there and make sure the virtual env is set up
 # cd path_to/clubready_booker
 # source path_to/clubready_booker/venv/bin/activate
-python clubready_booker/booker.py
+python clubready_booker/booker.py 0
 # deactivate
