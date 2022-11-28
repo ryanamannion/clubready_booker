@@ -131,6 +131,7 @@ def parse_class_elem(
         class_name = None
         instructor = None
         booking_id = None
+        booked = None
         for text in texts:
             if "AM" in text or "PM" in text:
                 if class_start is not None:
@@ -187,6 +188,10 @@ def parse_class_elem(
                 break
         if button := class_elem.find(attrs={'title': BUTTON_TITLE}):
             booking_id = button.attrs.get('onclick', None)
+        if "selectclass" in booking_id:
+            booked = False
+        elif "showbooking" in booking_id:
+            booked = True
         now = pytz.timezone(timezone).localize(datetime.now())
         ended = class_end < now if class_end else True
         started = class_start < now if class_start else True
@@ -206,7 +211,8 @@ def parse_class_elem(
             "registered": registered,
             "class_size": class_size,
             "spots_available": spots_available,
-            "booking_id": booking_id
+            "booking_id": booking_id,
+            "booked": booked
         }
         return _class
     except Exception as exc:
@@ -333,6 +339,10 @@ def book_class(
     )
     try:
         booking_id = class_dict['booking_id']
+        booked = class_dict['booked']
+        if booked is None or booked is True:
+            logger.info(f"Not booking, class has booked status: {booked}")
+            return
         get_classes_page(driver)
         class_button = (By.XPATH, f"//*[@onclick='{booking_id}']")
         class_book_button = driver.find_element(*class_button)
