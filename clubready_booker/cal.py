@@ -4,7 +4,7 @@ Cannot name it calendar.py or ese imports break
 """
 import datetime
 import logging
-from typing import Optional, Set, List
+from typing import Optional, Set, List, Union
 from collections import Counter
 
 from google.auth.transport.requests import Request
@@ -57,10 +57,10 @@ def get_service() -> Resource:
     return service
 
 
-def get_event_start_datetime(event: dict) -> datetime.datetime:
-    """Convert GCal event start to datetime.datetime."""
+def get_event_start_datetime(event: dict) -> Union[datetime.datetime, None]:
     event_start = event['start']
-    return datetime.datetime.fromisoformat(event_start['dateTime'])
+    if (start_str := event_start.get('dateTime', None)) is not None:
+        return datetime.datetime.fromisoformat(start_str)
 
 
 def get_next_events(
@@ -97,7 +97,7 @@ def get_next_events(
 
     try:
         now = datetime.datetime.now(datetime.timezone.utc)
-        now_str = now.isoformat()
+        now_str = now.isoformat()    # 'Z' indicates UTC time
 
         events_result = service.events().list(
             calendarId='primary', timeMin=now_str, singleEvents=True,
@@ -110,7 +110,8 @@ def get_next_events(
             return []
 
         # Prints the start and name of the next 10 events
-        max_start_time = now + datetime.timedelta(days=bookable_range)
+        max_start_time = now + datetime.timedelta(bookable_range)
+        logger.debug(f"TIMES current: {now}, max: {max_start_time}")
         valid_events = []
         invalid_reasons = []
         for event in events:
@@ -123,6 +124,9 @@ def get_next_events(
                 invalid_reasons.append('summary not in summary_set')
                 continue
             start_time = get_event_start_datetime(event)
+            if start_time is None:
+                invalid_reasons.append("could not parse start time")
+                continue
             if start_time > max_start_time:
                 invalid_reasons.append(f"beyond bookable range")
                 continue
@@ -144,7 +148,7 @@ def get_next_events(
 
 if __name__ == '__main__':
     service = get_service()
-    cal_events = get_next_events(service, bookable_range=2)
+    cal_events = get_next_events(service)
     for cal_event in cal_events:
         start = cal_event['start'].get('dateTime', cal_event['start'].get('date'))
         print(f"{cal_event['summary']} @ {start}")
