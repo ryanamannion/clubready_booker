@@ -29,7 +29,7 @@ default_config_vals = {
     'username': None,
     'password': None,
     'url': None,
-    'bookable_range': 2,
+    'bookable_range': 3,
     'max_results': 100,
     'timezone': 'America/New_York',
     'config_dir': None
