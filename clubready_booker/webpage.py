@@ -188,10 +188,11 @@ def parse_class_elem(
                 break
         if button := class_elem.find(attrs={'title': BUTTON_TITLE}):
             booking_id = button.attrs.get('onclick', None)
-        if "selectclass" in booking_id:
-            booked = False
-        elif "showbooking" in booking_id:
-            booked = True
+        if booking_id:
+            if "selectclass" in booking_id:
+                booked = False
+            elif "showbooking" in booking_id:
+                booked = True
         now = pytz.timezone(timezone).localize(datetime.now())
         ended = class_end < now if class_end else True
         started = class_start < now if class_start else True
