@@ -68,5 +68,5 @@ if __name__ == "__main__":
     if len(sys.argv) > 1:
         dry_run = bool(sys.argv[1])
     else:
-        dry_run = "Dry run? 1/0 > "
+        dry_run = int(input("Dry run? 1/0 > "))
     book_classes(dry_run=dry_run)

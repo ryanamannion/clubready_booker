@@ -441,5 +441,5 @@ if __name__ == "__main__":
     if len(sys.argv) > 1:
         save_cache = bool(sys.argv[1])
     else:
-        save_cache = input("Save class table cache to JSON? 1/0 > ")
+        save_cache = int(input("Save class table cache to JSON? 1/0 > "))
     main(save_cache=save_cache)
